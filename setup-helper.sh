@@ -33,7 +33,7 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin signage --noclear %I $TERM
 EOF
 systemctl daemon-reexec
-systemctl restart getty@tty1
+echo "[!] TTY1 autologin will take effect after reboot."
 
 echo "[+] Creating systemd user service for DSN Player..."
 runuser -u signage -- mkdir -p /home/signage/.config/systemd/user
