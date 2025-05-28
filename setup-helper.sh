@@ -35,11 +35,11 @@ EOF
 systemctl daemon-reexec
 echo "[!] TTY1 autologin will take effect after reboot."
 
-echo "[+] Creating systemd user service for DSN Player..."
+echo "[+] Creating systemd user service to start X session..."
 runuser -u signage -- mkdir -p /home/signage/.config/systemd/user
 cat <<EOF > /home/signage/.config/systemd/user/dsn-player.service
 [Unit]
-Description=Start X and DSN Player
+Description=Start X Session for DSN
 After=graphical.target
 
 [Service]
@@ -54,22 +54,52 @@ Restart=always
 WantedBy=default.target
 EOF
 
-echo "[+] Creating X session script..."
+echo "[+] Creating X session launcher (no apps)..."
 cat <<EOF > /usr/local/bin/dsn-x-session
 #!/bin/bash
 unclutter --timeout 0 &
 xset s off
 xset -dpms
 xset s noblank
-soar run remote &
-soar run transcend
 EOF
 
 chmod +x /usr/local/bin/dsn-x-session
 
-echo "[+] Enabling systemd user service..."
+echo "[+] Creating systemd user service for SOAR Remote..."
+cat <<EOF > /home/signage/.config/systemd/user/soar-remote.service
+[Unit]
+Description=SOAR Remote Player
+After=graphical.target
+
+[Service]
+ExecStart=/usr/local/bin/soar run remote
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+
+echo "[+] Creating systemd user service for SOAR Transcend..."
+cat <<EOF > /home/signage/.config/systemd/user/soar-transcend.service
+[Unit]
+Description=SOAR Transcend Player
+After=soar-remote.service
+
+[Service]
+ExecStart=/usr/local/bin/soar run transcend
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+
+echo "[+] Enabling systemd user services..."
 loginctl enable-linger signage
 runuser -u signage -- systemctl --user daemon-reexec
 runuser -u signage -- systemctl --user enable dsn-player.service
+runuser -u signage -- systemctl --user enable soar-remote.service
+runuser -u signage -- systemctl --user enable soar-transcend.service
 
-echo "[✓] Setup complete."
+echo "[✓] Setup complete. Reboot to apply TTY1 autologin and start full system."
