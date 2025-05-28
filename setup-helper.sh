@@ -49,8 +49,8 @@ echo "[+] Creating system X service for startx..."
 cat <<EOF > /etc/systemd/system/x.service
 [Unit]
 Description=Start X on TTY1
-After=multi-user.target
-Requires=multi-user.target
+After=getty@tty1.service
+Requires=getty@tty1.service
 
 [Service]
 User=signage
@@ -64,7 +64,7 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 EOF
 
 echo "[+] Creating system service for SOAR Remote..."
