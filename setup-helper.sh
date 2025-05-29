@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "[+] Creating 'signage' user..."
-id signage &>/dev/null || useradd -m -s /bin/bash signage
-
 echo "[+] Installing dependencies..."
 apt update
 apt install -y \
@@ -39,7 +36,7 @@ EOF
 
 systemctl daemon-reexec
 
-echo "[+] Setting up .xinitrc for signage..."
+echo "[+] Creating .xinitrc for signage..."
 cat <<EOF > /home/signage/.xinitrc
 #!/bin/bash
 export DISPLAY=:0
@@ -47,7 +44,7 @@ unclutter --timeout 0 &
 xset s off
 xset -dpms
 xset s noblank
-# Leave X running; player starts separately
+# Keep X alive
 while true; do sleep 60; done
 EOF
 chown signage:signage /home/signage/.xinitrc
@@ -67,10 +64,6 @@ Restart=always
 [Install]
 WantedBy=default.target
 EOF
-chown -R signage:signage /home/signage/.config
-
-echo "[+] Enabling user linger for signage..."
-loginctl enable-linger signage
 
 echo "[+] Creating user service for SOAR Remote..."
 cat <<EOF > /home/signage/.config/systemd/user/remote.service
@@ -107,7 +100,10 @@ EOF
 
 chown -R signage:signage /home/signage/.config
 
-echo "[+] Enabling user services..."
+echo "[+] Enabling user linger for signage..."
+loginctl enable-linger signage
+
+echo "[+] Enabling user services for signage..."
 su - signage -c "systemctl --user daemon-reexec"
 su - signage -c "systemctl --user daemon-reload"
 su - signage -c "systemctl --user enable x.service"
