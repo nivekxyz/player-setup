@@ -10,7 +10,6 @@ apt install -y \
   intel-media-va-driver \
   fonts-freefont-ttf \
   unclutter \
-  openbox \
   wget curl bash nano p7zip-full dbus-x11 ca-certificates
 
 echo "[+] Installing Node.js 14..."
@@ -37,26 +36,27 @@ EOF
 systemctl daemon-reexec
 echo "[!] TTY1 autologin will take effect after reboot."
 
-echo "[+] Creating X session launcher script..."
-cat <<EOF > /usr/local/bin/dsn-x-session
+echo "[+] Creating dummy .xinitrc to launch X only..."
+cat <<EOF > /root/.xinitrc
 #!/bin/bash
 export DISPLAY=:0
 unclutter --timeout 0 &
 xset s off
 xset -dpms
 xset s noblank
-openbox &
+while true; do sleep 60; done
 EOF
-chmod +x /usr/local/bin/dsn-x-session
+chmod +x /root/.xinitrc
 
 echo "[+] Creating system X service..."
 cat <<EOF > /etc/systemd/system/x.service
 [Unit]
 Description=Start X session on boot
 After=multi-user.target
+Wants=multi-user.target
 
 [Service]
-ExecStart=/usr/bin/startx /usr/local/bin/dsn-x-session -- :0 vt01 -keeptty
+ExecStart=/usr/bin/startx -- :0 vt01 -keeptty
 Restart=always
 Environment=DISPLAY=:0
 Environment=XDG_RUNTIME_DIR=/tmp
@@ -105,4 +105,4 @@ systemctl enable x.service
 systemctl enable remote.service
 systemctl enable player.service
 
-echo "[✓] Setup complete. Reboot to launch full stack."
+echo "[✓] Setup complete. Run 'systemctl reboot now' to launch full stack."
