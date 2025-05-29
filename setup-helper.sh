@@ -2,6 +2,7 @@
 set -e
 
 echo "[+] Installing dependencies..."
+apt update
 apt install -y \
   chromium \
   xserver-xorg xinit x11-xserver-utils x11-utils \
@@ -9,6 +10,7 @@ apt install -y \
   intel-media-va-driver \
   fonts-freefont-ttf \
   unclutter \
+  openbox \
   wget curl bash nano p7zip-full dbus-x11 ca-certificates
 
 echo "[+] Installing Node.js 14..."
@@ -25,12 +27,12 @@ echo "[+] Installing SOAR..."
 npm install -g lsi-soar
 ln -sf /opt/node-v14.21.3-linux-x64/bin/soar /usr/local/bin/soar
 
-echo "[+] Enabling autologin on TTY1..."
+echo "[+] Enabling root autologin on TTY1..."
 mkdir -p /etc/systemd/system/getty@tty1.service.d
 cat <<EOF > /etc/systemd/system/getty@tty1.service.d/override.conf
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin signage --noclear %I $TERM
+ExecStart=-/sbin/agetty --autologin root --noclear %I \$TERM
 EOF
 systemctl daemon-reexec
 echo "[!] TTY1 autologin will take effect after reboot."
@@ -39,34 +41,30 @@ echo "[+] Creating X session launcher script..."
 cat <<EOF > /usr/local/bin/dsn-x-session
 #!/bin/bash
 export DISPLAY=:0
-export XDG_RUNTIME_DIR=/run/user/1000
 unclutter --timeout 0 &
 xset s off
 xset -dpms
 xset s noblank
+openbox &
 EOF
 chmod +x /usr/local/bin/dsn-x-session
 
-echo "[+] Creating system X service for startx..."
+echo "[+] Creating system X service..."
 cat <<EOF > /etc/systemd/system/x.service
 [Unit]
-Description=Start X on TTY1
-After=getty@tty1.service
-Requires=getty@tty1.service
+Description=Start X session on boot
+After=multi-user.target
 
 [Service]
-User=signage
-TTYPath=/dev/tty1
-Environment=DISPLAY=:0
-Environment=XDG_RUNTIME_DIR=/run/user/1000
 ExecStart=/usr/bin/startx /usr/local/bin/dsn-x-session -- :0 vt01 -keeptty
 Restart=always
-StandardInput=tty
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=/tmp
 StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 EOF
 
 echo "[+] Creating system service for SOAR Remote..."
@@ -74,10 +72,8 @@ cat <<EOF > /etc/systemd/system/remote.service
 [Unit]
 Description=SOAR Remote App
 After=network.target
-Requires=network.target
 
 [Service]
-User=signage
 ExecStart=/usr/local/bin/soar run remote
 Restart=always
 RestartSec=5
@@ -94,9 +90,7 @@ After=remote.service x.service
 Requires=remote.service x.service
 
 [Service]
-User=signage
 Environment=DISPLAY=:0
-Environment=XDG_RUNTIME_DIR=/run/user/1000
 ExecStartPre=/bin/bash -c 'for i in {1..20}; do xset q > /dev/null 2>&1 && exit 0 || sleep 0.5; done; exit 1'
 ExecStart=/usr/local/bin/soar run transcend
 Restart=always
