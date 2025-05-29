@@ -5,7 +5,7 @@ echo "[+] Installing dependencies..."
 apt update
 apt install -y \
   chromium \
-  xserver-xorg xinit openbox \
+  xserver-xorg xinit matchbox-window-manager \
   x11-xserver-utils x11-utils mesa-utils \
   libva2 libva-drm2 libva-x11-2 intel-media-va-driver \
   fonts-freefont-ttf unclutter \
@@ -35,17 +35,23 @@ EOF
 
 systemctl daemon-reexec
 
-echo "[+] Creating .xinitrc to launch Openbox..."
+echo "[+] Creating .xinitrc for signage (Matchbox)..."
 cat <<EOF > /home/signage/.xinitrc
 #!/bin/bash
-export XDG_RUNTIME_DIR=/run/user/$(id -u signage)
 export DISPLAY=:0
-exec openbox-session
+export XDG_RUNTIME_DIR=/run/user/\$(id -u)
+unclutter --timeout 0 &
+xset s off
+xset -dpms
+xset s noblank
+
+exec matchbox-window-manager -use_cursor no -use_titlebar no
 EOF
+
 chown signage:signage /home/signage/.xinitrc
 chmod +x /home/signage/.xinitrc
 
-echo "[+] Adding startx to .profile..."
+echo "[+] Adding startx to .profile for auto-X start..."
 cat <<'EOF' >> /home/signage/.profile
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
   exec startx
@@ -57,13 +63,16 @@ echo "[+] Creating user systemd service for SOAR Remote..."
 mkdir -p /home/signage/.config/systemd/user
 cat <<EOF > /home/signage/.config/systemd/user/remote.service
 [Unit]
-Description=SOAR Remote
+Description=SOAR Remote Service
 After=graphical.target
 
 [Service]
 ExecStart=/usr/local/bin/soar run remote
 Restart=always
 RestartSec=2
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=HOME=/home/%u
 
 [Install]
 WantedBy=default.target
@@ -72,17 +81,18 @@ EOF
 echo "[+] Creating user systemd service for SOAR Transcend..."
 cat <<EOF > /home/signage/.config/systemd/user/player.service
 [Unit]
-Description=SOAR Transcend (Chromium)
+Description=SOAR Transcend Player
 After=graphical.target remote.service
 Requires=remote.service
 
 [Service]
-Environment=DISPLAY=:0
-Environment=XDG_RUNTIME_DIR=/run/user/$(id -u signage)
-ExecStartPre=/bin/bash -c 'for i in {1..30}; do xset q >/dev/null 2>&1 && exit 0 || sleep 0.5; done; exit 1'
 ExecStart=/usr/local/bin/soar run transcend
 Restart=always
 RestartSec=2
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=HOME=/home/%u
+ExecStartPre=/bin/bash -c 'for i in {1..30}; do xset q >/dev/null 2>&1 && exit 0 || sleep 0.5; done; exit 1'
 
 [Install]
 WantedBy=default.target
@@ -90,14 +100,18 @@ EOF
 
 chown -R signage:signage /home/signage/.config
 
-echo "[+] Enabling user lingering..."
+echo "[+] Enabling linger for signage (user services at boot)..."
 loginctl enable-linger signage
 
-echo "[+] Enabling user services..."
+echo "[+] Ensuring XDG_RUNTIME_DIR exists..."
+mkdir -p /run/user/$(id -u signage)
+chown signage:signage /run/user/$(id -u signage)
+
+echo "[+] Enabling systemd user services..."
 su - signage -c "systemctl --user daemon-reexec"
 su - signage -c "systemctl --user daemon-reload"
 su - signage -c "systemctl --user enable remote.service"
 su - signage -c "systemctl --user enable player.service"
 
-echo "[✓] Setup complete. Rebooting to launch full stack..."
+echo "[✓] Setup complete. Rebooting into Matchbox + SOAR stack..."
 systemctl reboot now
