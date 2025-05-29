@@ -38,6 +38,8 @@ echo "[!] TTY1 autologin will take effect after reboot."
 echo "[+] Creating X session launcher script..."
 cat <<EOF > /usr/local/bin/dsn-x-session
 #!/bin/bash
+export DISPLAY=:0
+export XDG_RUNTIME_DIR=/run/user/1000
 unclutter --timeout 0 &
 xset s off
 xset -dpms
