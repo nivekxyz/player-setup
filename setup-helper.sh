@@ -50,22 +50,16 @@ EOF
 chown signage:signage /home/signage/.xinitrc
 chmod +x /home/signage/.xinitrc
 
-echo "[+] Creating user-level systemd service to start X..."
-mkdir -p /home/signage/.config/systemd/user
-cat <<EOF > /home/signage/.config/systemd/user/x.service
-[Unit]
-Description=Start X session on TTY1
-After=graphical.target
-
-[Service]
-ExecStart=/usr/bin/startx
-Restart=always
-
-[Install]
-WantedBy=default.target
+echo "[+] Adding startx to .profile..."
+cat <<'EOF' >> /home/signage/.profile
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+  exec startx
+fi
 EOF
+chown signage:signage /home/signage/.profile
 
 echo "[+] Creating user service for SOAR Remote..."
+mkdir -p /home/signage/.config/systemd/user
 cat <<EOF > /home/signage/.config/systemd/user/remote.service
 [Unit]
 Description=SOAR Remote
@@ -84,8 +78,8 @@ echo "[+] Creating user service for SOAR Transcend..."
 cat <<EOF > /home/signage/.config/systemd/user/player.service
 [Unit]
 Description=SOAR Transcend Player
-After=x.service remote.service
-Requires=x.service remote.service
+After=remote.service
+Requires=remote.service
 
 [Service]
 Environment=DISPLAY=:0
@@ -106,7 +100,6 @@ loginctl enable-linger signage
 echo "[+] Enabling user services for signage..."
 su - signage -c "systemctl --user daemon-reexec"
 su - signage -c "systemctl --user daemon-reload"
-su - signage -c "systemctl --user enable x.service"
 su - signage -c "systemctl --user enable remote.service"
 su - signage -c "systemctl --user enable player.service"
 
