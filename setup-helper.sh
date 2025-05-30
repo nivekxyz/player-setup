@@ -1,11 +1,13 @@
+touch /etc/systemd/system/getty@tty1.service.d/autologin.conf
+
 cat <<EOF > /etc/systemd/system/getty@tty1.service.d/autologin.conf
 [Service]
 ExecStart=
 ExecStart=-/sbin/agetty -o '-p -f -- \\u' --noissue --autologin signage %I $TERM
 EOF
 
-sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
-sudo sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' /etc/default/grub
+sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
+sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' /etc/default/grub
 update-grub
 
 apt install curl wget cage xwayland chromium vainfo intel-media-va-driver lm-sensors nmap grim
