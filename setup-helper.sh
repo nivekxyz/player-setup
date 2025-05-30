@@ -26,28 +26,26 @@ su - signage -c "soar set player vendor LSI"
 su - signage -c "soar set player browser /usr/bin/chromium"
 su - signage -c "soar fetch transcend remote"
 
-cat <<EOF > /home/lsi/.config/systemd/user/remote.service
+cat <<EOF > /home/signage/.config/systemd/user/remote.service
 [Unit]
 Description=DSN Remote Service
 
 [Service]
-ExecStart=/home/lsi/.nvm/versions/node/v14.21.3/bin/soar run remote
-Environment="PATH=/home/lsi/.nvm/versions/node/v14.21.3/bin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment="Home=/home/lsi"
+ExecStart=soar run remote
+Environment="Home=/home/signage"
 
 [Install]
 WantedBy=default.target
 EOF
 
-cat <<EOF > /home/lsi/.config/systemd/user/player.service
+cat <<EOF > /home/signage/.config/systemd/user/player.service
 [Unit]
 Description=DSN Player Service
 
 [Service]
 ExecStartPre=/usr/bin/sleep 1
-ExecStart=/usr/bin/cage /home/lsi/.nvm/versions/node/v14.21.3/bin/soar run transcend
-Environment="PATH=/home/lsi/.nvm/versions/node/v14.21.3/bin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment="Home=/home/lsi"
+ExecStart=/usr/bin/cage soar run transcend
+Environment="Home=/home/signage"
 Environment="WAYLAND=true"
 
 [Install]
@@ -112,13 +110,13 @@ alias set_network='sudo nano /etc/network/interfaces'
 
 alias set_timezone='sudo timedatectl set-timezone'
 
-alias set_rotation_0="sed -i 's|^ExecStart=.*$|ExecStart=/usr/bin/cage /home/lsi/.nvm/versions/node/v14.21.3/bin/soar run transcend|' /home/lsi/.config/systemd/user/player.service && systemctl --user daemon-reload && systemctl --user restart player.service"
+alias set_rotation_0="sed -i 's|^ExecStart=.*$|ExecStart=/usr/bin/cage /home/signage/.nvm/versions/node/v14.21.3/bin/soar run transcend|' /home/signage/.config/systemd/user/player.service && systemctl --user daemon-reload && systemctl --user restart player.service"
 
-alias set_rotation_90="sed -i 's|^ExecStart=.*$|ExecStart=/usr/bin/cage -r /home/lsi/.nvm/versions/node/v14.21.3/bin/soar run transcend|' /home/lsi/.config/systemd/user/player.service && systemctl --user daemon-reload && systemctl --user restart player.service"
+alias set_rotation_90="sed -i 's|^ExecStart=.*$|ExecStart=/usr/bin/cage -r /home/signage/.nvm/versions/node/v14.21.3/bin/soar run transcend|' /home/signage/.config/systemd/user/player.service && systemctl --user daemon-reload && systemctl --user restart player.service"
 
-alias set_rotation_180="sed -i 's|^ExecStart=.*$|ExecStart=/usr/bin/cage -r -r /home/lsi/.nvm/versions/node/v14.21.3/bin/soar run transcend|' /home/lsi/.config/systemd/user/player.service && systemctl --user daemon-reload && systemctl --user restart player.service"
+alias set_rotation_180="sed -i 's|^ExecStart=.*$|ExecStart=/usr/bin/cage -r -r /home/signage/.nvm/versions/node/v14.21.3/bin/soar run transcend|' /home/signage/.config/systemd/user/player.service && systemctl --user daemon-reload && systemctl --user restart player.service"
 
-alias set_rotation_270="sed -i 's|^ExecStart=.*$|ExecStart=/usr/bin/cage -r -r -r /home/lsi/.nvm/versions/node/v14.21.3/bin/soar run transcend|' /home/lsi/.config/systemd/user/player.service && systemctl --user daemon-reload && systemctl --user restart player.service"
+alias set_rotation_270="sed -i 's|^ExecStart=.*$|ExecStart=/usr/bin/cage -r -r -r /home/signage/.nvm/versions/node/v14.21.3/bin/soar run transcend|' /home/signage/.config/systemd/user/player.service && systemctl --user daemon-reload && systemctl --user restart player.service"
 
 alias restart_player='systemctl --user restart player.service'
 
