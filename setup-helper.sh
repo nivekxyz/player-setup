@@ -1,5 +1,4 @@
-touch /etc/systemd/system/getty@tty1.service.d/autologin.conf
-
+mkdir -p /etc/systemd/system/getty@tty1.service.d/
 cat <<EOF > /etc/systemd/system/getty@tty1.service.d/autologin.conf
 [Service]
 ExecStart=
@@ -22,11 +21,14 @@ ln -sf /opt/node-v14.21.3-linux-x64/bin/npm /usr/local/bin/npm
 ln -sf /opt/node-v14.21.3-linux-x64/bin/npx /usr/local/bin/npx
 
 npm install -g lsi-soar
+ln -sf /opt/node-v14.21.3-linux-x64/bin/soar /usr/local/bin/soar
 
 su - signage -c "soar bind deploy.lsidigital.com"
 su - signage -c "soar set player vendor LSI"
 su - signage -c "soar set player browser /usr/bin/chromium"
 su - signage -c "soar fetch transcend remote"
+
+mkdir -p /home/signage/.config/systemd/user/
 
 cat <<EOF > /home/signage/.config/systemd/user/remote.service
 [Unit]
